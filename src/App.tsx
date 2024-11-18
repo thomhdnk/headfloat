@@ -27,7 +27,7 @@ function App() {
             </p>
           </div>
 
-          <div className="max-w-7xl mx-auto mb-24">
+          <div className="max-w-7xl mx-auto mb-24 text-center">
             {!uploadedImage && !imageData ? (
               <div className="max-w-xl mx-auto">
                 <ImageUpload 
@@ -37,6 +37,7 @@ function App() {
                   }} 
                 />
               </div>
+              <small class="text-slate-500">Your image is processed locally and never saved. Privacy guaranteed.</small>
             ) : imageData ? (
               <ImagePreview
                 imageData={imageData}
