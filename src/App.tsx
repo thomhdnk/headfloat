@@ -27,7 +27,7 @@ function App() {
             </p>
           </div>
 
-          <div className="max-w-7xl mx-auto mb-24 text-center">
+          <div className="max-w-7xl mx-auto mb-24">
             {!uploadedImage && !imageData ? (
               <div className="max-w-xl mx-auto">
                 <ImageUpload 
