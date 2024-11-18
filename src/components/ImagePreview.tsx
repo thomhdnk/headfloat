@@ -21,7 +21,6 @@ interface ImagePreviewProps {
 
 export function ImagePreview({
   imageData,
-  originalImage,
   onReset,
   onEdit,
 }: ImagePreviewProps) {
