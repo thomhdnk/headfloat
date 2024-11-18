@@ -37,7 +37,7 @@ function App() {
                   }} 
                 />
               </div>
-              <small className="text-slate-500">Your image is processed locally and never saved. Privacy guaranteed.</small>
+              <small>Your image is processed locally and never saved. Privacy guaranteed.</small>
             ) : imageData ? (
               <ImagePreview
                 imageData={imageData}
