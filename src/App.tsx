@@ -29,13 +29,14 @@ function App() {
 
           <div className="max-w-7xl mx-auto mb-24">
             {!uploadedImage && !imageData ? (
-              <div className="max-w-xl mx-auto">
+              <div className="max-w-xl mx-auto text-center">
                 <ImageUpload 
                   onImageUpload={(image) => {
                     setUploadedImage(image);
                     setIsEditing(true);
                   }} 
                 />
+                <small className="text-slate-500">Your image is processed locally and never saved. Privacy guaranteed.</small>
               </div>
             ) : imageData ? (
               <ImagePreview
