@@ -17,7 +17,6 @@ function App() {
         <div className="relative px-6 py-24 mx-auto max-w-7xl">
           <div className="text-center mb-16">
             <div className="flex items-center justify-center gap-2 mb-6">
-              <ScissorsLineDashed className="w-12 h-12 text-primary" />
               <h1 className="text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/50">
                 Your avatar,<br /> your first impression
               </h1>
