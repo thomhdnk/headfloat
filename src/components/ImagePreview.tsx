@@ -10,11 +10,30 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { RotateCcw, Download, Pencil } from 'lucide-react';
+import { RotateCcw, Download, Pencil, RotateCw } from 'lucide-react';
+
+interface Emoji {
+  id: string;
+  symbol: string;
+  x: number;
+  y: number;
+  scale: number;
+  rotation: number;
+}
+
+const EMOJI_OPTIONS = [
+  { symbol: '👑', name: 'Crown' },
+  { symbol: '🕶️', name: 'Sunglasses' },
+  { symbol: '🎩', name: 'Top Hat' },
+  { symbol: '🤠', name: 'Cowboy Hat' },
+  { symbol: '😎', name: 'Cool' },
+  { symbol: '🦄', name: 'Unicorn' },
+  { symbol: '⭐', name: 'Star' },
+  { symbol: '🎭', name: 'Theater' },
+];
 
 interface ImagePreviewProps {
   imageData: ImageData;
-  originalImage: string;
   onReset: () => void;
   onEdit: () => void;
 }
@@ -29,6 +48,10 @@ export function ImagePreview({
   const [rotation, setRotation] = useState(0);
   const [brightness, setBrightness] = useState(100);
   const [backgroundColor, setBackgroundColor] = useState('#ffffff');
+  const [emojis, setEmojis] = useState<Emoji[]>([]);
+  const [selectedEmoji, setSelectedEmoji] = useState<string | null>(null);
+  const [draggingEmoji, setDraggingEmoji] = useState<string | null>(null);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -75,7 +98,134 @@ export function ImagePreview({
 
     // Restore context state
     ctx.restore();
-  }, [imageData, scale, rotation, brightness, backgroundColor]);
+
+    // Draw emojis
+    emojis.forEach((emoji) => {
+      ctx.save();
+      ctx.translate(emoji.x, emoji.y);
+      ctx.rotate((emoji.rotation * Math.PI) / 180);
+      ctx.font = `${48 * emoji.scale}px serif`;
+      ctx.textBaseline = 'middle';
+      ctx.textAlign = 'center';
+      ctx.fillText(emoji.symbol, 0, 0);
+      
+      // Draw selection box if emoji is selected
+      if (selectedEmoji === emoji.id) {
+        const metrics = ctx.measureText(emoji.symbol);
+        const height = 48 * emoji.scale;
+        const width = metrics.width;
+        
+        ctx.strokeStyle = '#0ea5e9';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 5]);
+        ctx.strokeRect(
+          -width / 2 - 5,
+          -height / 2 - 5,
+          width + 10,
+          height + 10
+        );
+      }
+      ctx.restore();
+    });
+  }, [imageData, scale, rotation, brightness, backgroundColor, emojis, selectedEmoji]);
+
+  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+    // Check if clicked on an emoji
+    const clickedEmoji = emojis.find((emoji) => {
+      const distance = Math.hypot(emoji.x - x, emoji.y - y);
+      return distance < 24 * emoji.scale;
+    });
+
+    setSelectedEmoji(clickedEmoji?.id || null);
+  };
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas || !selectedEmoji) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+    const emoji = emojis.find((e) => e.id === selectedEmoji);
+    if (emoji) {
+      setDraggingEmoji(selectedEmoji);
+      setDragOffset({
+        x: x - emoji.x,
+        y: y - emoji.y,
+      });
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas || !draggingEmoji) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+    setEmojis(emojis.map((emoji) =>
+      emoji.id === draggingEmoji
+        ? {
+            ...emoji,
+            x: x - dragOffset.x,
+            y: y - dragOffset.y,
+          }
+        : emoji
+    ));
+  };
+
+  const handleMouseUp = () => {
+    setDraggingEmoji(null);
+  };
+
+  const addEmoji = (symbol: string) => {
+    const newEmoji: Emoji = {
+      id: Math.random().toString(36).substr(2, 9),
+      symbol,
+      x: 250,
+      y: 250,
+      scale: 1,
+      rotation: 0,
+    };
+    setEmojis([...emojis, newEmoji]);
+    setSelectedEmoji(newEmoji.id);
+  };
+
+  const removeSelectedEmoji = () => {
+    if (selectedEmoji) {
+      setEmojis(emojis.filter((emoji) => emoji.id !== selectedEmoji));
+      setSelectedEmoji(null);
+    }
+  };
+
+  const updateSelectedEmojiScale = (scale: number) => {
+    if (selectedEmoji) {
+      setEmojis(emojis.map((emoji) =>
+        emoji.id === selectedEmoji
+          ? { ...emoji, scale }
+          : emoji
+      ));
+    }
+  };
+
+  const updateSelectedEmojiRotation = (rotation: number) => {
+    if (selectedEmoji) {
+      setEmojis(emojis.map((emoji) =>
+        emoji.id === selectedEmoji
+          ? { ...emoji, rotation }
+          : emoji
+      ));
+    }
+  };
 
   const handleDownload = () => {
     const canvas = canvasRef.current;
@@ -98,6 +248,11 @@ export function ImagePreview({
                 width={500}
                 height={500}
                 className="w-full h-full object-contain"
+                onClick={handleCanvasClick}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseUp}
               />
             </div>
           </Card>
@@ -157,6 +312,63 @@ export function ImagePreview({
               />
             </div>
           </div>
+
+          <div className="space-y-2">
+            <Label>Add Emoji</Label>
+            <div className="grid grid-cols-4 gap-2">
+              {EMOJI_OPTIONS.map((emoji) => (
+                <Button
+                  key={emoji.symbol}
+                  variant="outline"
+                  className="h-10 px-0"
+                  onClick={() => addEmoji(emoji.symbol)}
+                >
+                  {emoji.symbol}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          {selectedEmoji && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Emoji Size</Label>
+                <Slider
+                  min={0.5}
+                  max={10}
+                  step={0.1}
+                  value={[emojis.find((e) => e.id === selectedEmoji)?.scale || 1]}
+                  onValueChange={([value]) => updateSelectedEmojiScale(value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Emoji Rotation</Label>
+                <Slider
+                  min={0}
+                  max={360}
+                  step={1}
+                  value={[emojis.find((e) => e.id === selectedEmoji)?.rotation || 0]}
+                  onValueChange={([value]) => updateSelectedEmojiRotation(value)}
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => updateSelectedEmojiRotation(0)}
+                >
+                  <RotateCw className="w-4 h-4 mr-2" />
+                  Reset rotation
+                </Button>
+              </div>
+              <Button
+                variant="destructive"
+                className="w-full"
+                onClick={removeSelectedEmoji}
+              >
+                Remove Emoji
+              </Button>
+            </div>
+          )}
         </CardContent>
         <CardFooter className="flex flex-col gap-2">
           <Button className="w-full" onClick={handleDownload}>
